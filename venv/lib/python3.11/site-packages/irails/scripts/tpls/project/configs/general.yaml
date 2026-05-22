@@ -1,0 +1,40 @@
+app:
+  appdirs:
+  - apps
+  enabled: null
+  root: 
+
+cors:
+  allow_credentials: true
+  allow_headers:
+  - '*'
+  allow_methods:
+  - '*'
+  allow_origins:
+  - '*'
+debug: true
+errors:
+  error_404_page: '{ROOT.public_dir}/error_404.html'
+  error_500_page: '{ROOT.public_dir}/error_500.html'
+log:
+  file: ''
+  level: DEBUG
+  name: iRails
+  msgfmt: '%(asctime)s %(name)s:%(levelname)s:%(message)s'
+  datefmt: '%Y-%M-%d %H:%M:%S'
+public_dir: ./public
+
+view:
+  jinja2:
+    block_end_string: '%}'
+    block_start_string: '{%'
+    comment_end_string: '#}'
+    comment_start_string: '{#'
+    variable_end_string: '}'
+    variable_start_string: ${
+  static_format:
+  - vue
+  - html
+i18n:
+  lang: ['zh']
+  url_lang_key: 'lang'

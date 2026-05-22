@@ -1,0 +1,13 @@
+name: 'authentication'
+title: 'authentication'
+description: 'authentication'
+version: '1.0'
+author: 'authentication'
+slots: true
+plugins: []
+depends: []
+license: 'MIT'
+category: 'api'
+packages:
+- controllers
+- services

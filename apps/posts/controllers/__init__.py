@@ -1,0 +1,1 @@
+from . import posts_controller

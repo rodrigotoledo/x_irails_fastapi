@@ -1,0 +1,14 @@
+name: 'posts'
+title: 'posts'
+description: 'posts'
+version: '1.0'
+author: 'posts'
+slots: true
+plugins: []
+depends: []
+license: 'MIT'
+category: 'api'
+packages:
+- models
+- services
+- controllers

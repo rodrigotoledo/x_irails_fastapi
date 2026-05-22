@@ -1,0 +1,14 @@
+name: 'users'
+title: 'users'
+description: 'users'
+version: '1.0'
+author: 'users'
+slots: true
+plugins: []
+depends: []
+license: 'MIT'
+category: 'api'
+packages:
+- models
+- services
+- controllers
