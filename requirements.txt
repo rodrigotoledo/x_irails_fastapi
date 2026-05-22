@@ -1,0 +1,13 @@
+irails==1.6.4
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+psycopg2-binary
+PyJWT
+bcrypt
+redis
+jinja2
+python-multipart
+websockets
+Pillow
