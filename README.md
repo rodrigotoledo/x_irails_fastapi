@@ -15,10 +15,8 @@ docker compose up -d postgres redis
 ## Project Setup
 
 ```bash
-cd twitter-brown-fastapi
-python3 -m venv venv
-source venv/bin/activate
-python -m pip install -r requirements.txt
+cd x_irails_fastapi
+asdf exec python -m pip install -r requirements.txt
 ```
 
 ## Useful Commands
@@ -26,68 +24,61 @@ python -m pip install -r requirements.txt
 ### Run server
 
 ```bash
-cd twitter-brown-fastapi
-python3 -m venv venv
-source venv/bin/activate
-irails run --host 0.0.0.0 --port 8000
+cd x_irails_fastapi
+asdf exec python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ### Database migration (upgrade)
 
 ```bash
-cd twitter-brown-fastapi
-python3 -m venv venv
-source venv/bin/activate
-irails migrate -u
+cd x_irails_fastapi
+asdf exec python -m alembic -c configs/alembic.ini upgrade head
 ```
 
 ### Database migration (downgrade)
 
 ```bash
-cd twitter-brown-fastapi
-python3 -m venv venv
-source venv/bin/activate
-irails migrate -d
+cd x_irails_fastapi
+asdf exec python -m alembic -c configs/alembic.ini downgrade -1
 ```
 
 ### Check Alembic revision
 
 ```bash
-cd twitter-brown-fastapi
-python3 -m venv venv
-source venv/bin/activate
-alembic -c configs/alembic.ini current
+cd x_irails_fastapi
+asdf exec python -m alembic -c configs/alembic.ini current
 ```
 
-### Run with global iRails (if you are not using venv)
+### Run with iRails directly
 
 ```bash
-cd twitter-brown-fastapi
-irails run --host 0.0.0.0 --port 8000
-irails migrate -u
+cd x_irails_fastapi
+/Users/rodrigotoledo/.asdf/installs/python/3.11.9/bin/irails --help
 ```
+
+The `irails` package is installed, but this machine does not currently have an
+asdf shim named `irails`, so `irails migrate -u` may print `command not found`.
+Use the Alembic commands above for migrations.
 
 ## Quick Health Checks
 
 ### Check config URL used by Alembic
 
 ```bash
-cd twitter-brown-fastapi
-python3 -m venv venv
-source venv/bin/activate
-python3 -c "from alembic.config import Config; c=Config('configs/alembic.ini'); print(c.get_main_option('sqlalchemy.url'))"
+cd x_irails_fastapi
+asdf exec python -c "from alembic.config import Config; c=Config('configs/alembic.ini'); print(c.get_main_option('sqlalchemy.url'))"
 ```
 
 Expected (local):
 
 ```text
-postgresql+psycopg2://postgres:postgres@localhost:5432/x_clone_dev
+postgresql+psycopg2://postgres:postgres@localhost:5432/postgres
 ```
 
 ### Check current migration file(s)
 
 ```bash
-cd twitter-brown-fastapi
+cd x_irails_fastapi
 ls -1 data/alembic/versions
 ```
 
@@ -98,15 +89,16 @@ ls -1 data/alembic/versions
 Run commands inside this directory:
 
 ```bash
-cd twitter-brown-fastapi
+cd x_irails_fastapi
 ```
 
-### `irails migrate` only prints usage
+### `irails: command not found`
 
-That is expected without a flag. Use:
+Use Alembic through the pinned asdf Python:
 
-- `-u` for upgrade
-- `-d` for downgrade
+```bash
+asdf exec python -m alembic -c configs/alembic.ini upgrade head
+```
 
 ### Postgres auth warning during migration check
 
@@ -116,12 +108,10 @@ Ensure this file has a real password (not `***`):
 
 And verify `configs/database.yaml` uses the same credentials as your running Postgres.
 
-### `source venv/bin/activate` behaves unexpectedly
+### Check the pinned Python
 
 ```bash
-cd twitter-brown-fastapi
-python3 -m venv venv
-source venv/bin/activate
-python --version
-irails --help
+cd x_irails_fastapi
+asdf exec python --version
+asdf exec python -m alembic -c configs/alembic.ini current
 ```
