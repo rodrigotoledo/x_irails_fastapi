@@ -77,6 +77,7 @@ class PostsController(BaseController):
     def like(self, post_id: str):
         session = Service.session()
         viewer = get_current_user(self.request, session)
+        session.close()
         if not viewer:
             return error_response("UNAUTHORIZED", "Authentication required", 401)
         post = PostService.get_post(uuid.UUID(post_id))
@@ -143,6 +144,7 @@ class PostsController(BaseController):
     def create_comment(self, post_id: str, payload: CreateCommentPayload):
         session = Service.session()
         viewer = get_current_user(self.request, session)
+        session.close()
         if not viewer:
             return error_response("UNAUTHORIZED", "Authentication required", 401)
         post = PostService.get_post(uuid.UUID(post_id))
@@ -155,6 +157,7 @@ class PostsController(BaseController):
     def delete_comment(self, post_id: str, comment_id: str):
         session = Service.session()
         viewer = get_current_user(self.request, session)
+        session.close()
         if not viewer:
             return error_response("UNAUTHORIZED", "Authentication required", 401)
         post = PostService.get_post(uuid.UUID(post_id))
