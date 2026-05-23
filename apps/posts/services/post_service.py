@@ -2,8 +2,10 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import desc, func, select
+from sqlalchemy.exc import IntegrityError
 
 from irails.apps.users.models import User
+from irails.apps.users.models.follow import Follow
 from irails.database import Service
 
 from ..models import Comment, Like, Post, Repost
@@ -15,11 +17,31 @@ class PostService(Service):
         return cls.session().get(Post, post_id)
 
     @classmethod
-    def create_post(cls, user_id: uuid.UUID, content: str) -> Post:
+    def get_post_by_idempotency_key(cls, user_id: uuid.UUID, idempotency_key: str) -> Post | None:
+        return cls.session().execute(
+            select(Post).where(
+                Post.user_id == user_id,
+                Post.idempotency_key == idempotency_key,
+            )
+        ).scalar_one_or_none()
+
+    @classmethod
+    def create_post(cls, user_id: uuid.UUID, content: str, idempotency_key: str) -> Post:
         session = cls.session()
-        post = Post(user_id=user_id, content=content)
+        existing = cls.get_post_by_idempotency_key(user_id, idempotency_key)
+        if existing:
+            return existing
+
+        post = Post(user_id=user_id, content=content, idempotency_key=idempotency_key)
         session.add(post)
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            existing = cls.get_post_by_idempotency_key(user_id, idempotency_key)
+            if existing:
+                return existing
+            raise
         session.refresh(post)
         return post
 
@@ -77,7 +99,11 @@ class PostService(Service):
         if existing:
             return False
         session.add(Like(user_id=user_id, post_id=post_id))
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            return False
         return True
 
     @classmethod
@@ -95,7 +121,11 @@ class PostService(Service):
         if existing:
             return False
         session.add(Repost(user_id=user_id, post_id=post_id))
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            return False
         return True
 
     @classmethod
@@ -147,9 +177,18 @@ class PostService(Service):
         comments_count = int(session.execute(select(func.count()).select_from(Comment).where(Comment.post_id == post.id)).scalar_one())
         liked_by_me = False
         reposted_by_me = False
+        is_own_post = viewer_id == post.user_id if viewer_id else False
+        is_following_author = False
         if viewer_id:
             liked_by_me = session.execute(select(Like).where(Like.post_id == post.id, Like.user_id == viewer_id)).scalar_one_or_none() is not None
             reposted_by_me = session.execute(select(Repost).where(Repost.post_id == post.id, Repost.user_id == viewer_id)).scalar_one_or_none() is not None
+            if not is_own_post:
+                is_following_author = session.execute(
+                    select(Follow).where(
+                        Follow.follower_id == viewer_id,
+                        Follow.following_id == post.user_id,
+                    )
+                ).scalar_one_or_none() is not None
         return {
             "id": str(post.id),
             "content": post.content,
@@ -160,6 +199,8 @@ class PostService(Service):
             "comments_count": comments_count,
             "liked_by_me": liked_by_me,
             "reposted_by_me": reposted_by_me,
+            "is_own_post": is_own_post,
+            "is_following_author": is_following_author,
             "user": {
                 "id": str(author.id),
                 "name": author.name,

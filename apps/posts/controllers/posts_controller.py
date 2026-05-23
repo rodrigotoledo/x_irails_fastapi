@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Query
+from fastapi import Header, Query
 from pydantic import BaseModel, Field
 
 from common.auth import get_current_user
@@ -26,25 +26,28 @@ class PostsController(BaseController):
     def feed(
         self,
         page: Annotated[int, Query(ge=1)] = 1,
-        limit: Annotated[int, Query(ge=1, le=50)] = 20,
+        limit: Annotated[int, Query(ge=1, le=200)] = 20,
         filter: str | None = None,
         q: str | None = None,
     ):
         session = Service.session()
         viewer = get_current_user(self.request, session)
-        if not viewer:
-            return error_response("UNAUTHORIZED", "Authentication required", 401)
         posts, total = PostService.list_feed(page, limit, filter, q)
-        data = [PostService.serialize_post(post, viewer.id) for post in posts]
+        data = [PostService.serialize_post(post, viewer.id if viewer else None) for post in posts]
         return paginated_response(data, page, limit, total)
 
     @api.post("/")
-    def create(self, payload: CreatePostPayload):
+    def create(self, payload: CreatePostPayload, idempotency_key: str | None = Header(default=None, alias="Idempotency-Key")):
         session = Service.session()
         viewer = get_current_user(self.request, session)
         if not viewer:
             return error_response("UNAUTHORIZED", "Authentication required", 401)
-        post = PostService.create_post(viewer.id, payload.content)
+        normalized_key = (idempotency_key or "").strip()
+        if not normalized_key:
+            return error_response("IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key header is required", 400)
+        if len(normalized_key) > 128:
+            return error_response("VALIDATION_ERROR", "Idempotency-Key must be 128 characters or fewer", 422)
+        post = PostService.create_post(viewer.id, payload.content, normalized_key)
         return data_response(PostService.serialize_post(post, viewer.id), status_code=201)
 
     @api.get("/{post_id}")
@@ -79,8 +82,9 @@ class PostsController(BaseController):
         post = PostService.get_post(uuid.UUID(post_id))
         if not post:
             return error_response("NOT_FOUND", "Post not found", 404)
-        if not PostService.like_post(viewer.id, post.id):
-            return error_response("ALREADY_LIKED", "Post already liked", 409)
+        if post.user_id == viewer.id:
+            return error_response("FORBIDDEN", "You cannot like your own post", 403)
+        PostService.like_post(viewer.id, post.id)
         return data_response(PostService.serialize_post(post, viewer.id))
 
     @api.delete("/{post_id}/like")
@@ -93,7 +97,7 @@ class PostsController(BaseController):
         if not post:
             return error_response("NOT_FOUND", "Post not found", 404)
         PostService.unlike_post(viewer.id, post.id)
-        return no_content_response()
+        return data_response(PostService.serialize_post(post, viewer.id))
 
     @api.post("/{post_id}/repost")
     def repost(self, post_id: str):
@@ -104,8 +108,9 @@ class PostsController(BaseController):
         post = PostService.get_post(uuid.UUID(post_id))
         if not post:
             return error_response("NOT_FOUND", "Post not found", 404)
-        if not PostService.repost_post(viewer.id, post.id):
-            return error_response("ALREADY_REPOSTED", "Post already reposted", 409)
+        if post.user_id == viewer.id:
+            return error_response("FORBIDDEN", "You cannot repost your own post", 403)
+        PostService.repost_post(viewer.id, post.id)
         return data_response(PostService.serialize_post(post, viewer.id))
 
     @api.delete("/{post_id}/repost")
@@ -118,7 +123,7 @@ class PostsController(BaseController):
         if not post:
             return error_response("NOT_FOUND", "Post not found", 404)
         PostService.unrepost_post(viewer.id, post.id)
-        return no_content_response()
+        return data_response(PostService.serialize_post(post, viewer.id))
 
     @api.get("/{post_id}/comments")
     def comments(

@@ -4,7 +4,7 @@ from fastapi import File, Query, UploadFile
 from pydantic import BaseModel, Field
 
 from common.auth import get_current_user
-from common.responses import data_response, error_response, no_content_response, paginated_response
+from common.responses import data_response, error_response, paginated_response
 from common.uploads import save_avatar_upload
 from irails import BaseController, api, route
 from irails.database import Service
@@ -83,26 +83,29 @@ class UsersController(BaseController):
     def follow(self, username: str):
         session = Service.session()
         viewer = get_current_user(self.request, session)
+        session.close()
         if not viewer:
             return error_response("UNAUTHORIZED", "Authentication required", 401)
         user = UserService.get_by_username(username)
         if not user:
             return error_response("NOT_FOUND", "User not found", 404)
-        if not UserService.follow_user(viewer.id, user.id):
-            return error_response("FORBIDDEN", "Unable to follow user", 403)
+        if user.id == viewer.id:
+            return error_response("FORBIDDEN", "You cannot follow yourself", 403)
+        UserService.follow_user(viewer.id, user.id)
         return data_response(UserService.serialize_user(user, viewer.id))
 
     @api.delete("/{username}/follow")
     def unfollow(self, username: str):
         session = Service.session()
         viewer = get_current_user(self.request, session)
+        session.close()
         if not viewer:
             return error_response("UNAUTHORIZED", "Authentication required", 401)
         user = UserService.get_by_username(username)
         if not user:
             return error_response("NOT_FOUND", "User not found", 404)
         UserService.unfollow_user(viewer.id, user.id)
-        return no_content_response()
+        return data_response(UserService.serialize_user(user, viewer.id))
 
     @api.get("/{username}/followers")
     def followers(

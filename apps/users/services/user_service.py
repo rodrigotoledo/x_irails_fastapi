@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from irails.apps.posts.models import Post
 from irails.database import Service
@@ -95,7 +96,11 @@ class UserService(Service):
             return False
         session = cls.session()
         session.add(Follow(follower_id=follower_id, following_id=following_id))
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            return False
         return True
 
     @classmethod

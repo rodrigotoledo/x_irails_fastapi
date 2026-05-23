@@ -5,6 +5,7 @@ from common.auth import blacklist_token, get_token_from_request
 from common.responses import data_response, error_response
 from common.uploads import save_avatar_upload
 from irails import BaseController, api, route
+from irails.apps.users.services import UserService
 
 from ..services import AuthenticationService
 
@@ -62,18 +63,7 @@ class AuthController(BaseController):
         return data_response(
             {
                 "token": token,
-                "user": {
-                    "id": str(user.id),
-                    "name": user.name,
-                    "username": user.username,
-                    "email": user.email,
-                    "avatar_url": user.avatar_url,
-                    "bio": user.bio,
-                    "phone": user.phone,
-                    "instagram": user.instagram,
-                    "created_at": user.created_at.isoformat(),
-                    "updated_at": user.updated_at.isoformat(),
-                },
+                "user": UserService.serialize_user(user, user.id),
             },
             status_code=201,
         )
@@ -89,18 +79,7 @@ class AuthController(BaseController):
         return data_response(
             {
                 "token": token,
-                "user": {
-                    "id": str(user.id),
-                    "name": user.name,
-                    "username": user.username,
-                    "email": user.email,
-                    "avatar_url": user.avatar_url,
-                    "bio": user.bio,
-                    "phone": user.phone,
-                    "instagram": user.instagram,
-                    "created_at": user.created_at.isoformat(),
-                    "updated_at": user.updated_at.isoformat(),
-                },
+                "user": UserService.serialize_user(user, user.id),
             }
         )
 

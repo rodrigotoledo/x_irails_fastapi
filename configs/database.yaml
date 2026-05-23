@@ -1,19 +1,19 @@
 database:
   dbhost: 'localhost'
-  dbname: 'postgres'
+  dbname: 'x_clone_dev'
   dbuser: 'postgres'
   dbpassword: 'postgres'
   dbencode: 'latin-1'
   dbdecode: 'gbk'
   # MySQL
-  # mysql+pymysql://username:password@host:port/database_name 
+  # mysql+pymysql://username:password@host:port/database_name
   # PostgreSQL
-  # postgresql+psycopg2://username:password@host:port/database_name 
+  # postgresql+psycopg2://username:password@host:port/database_name
   # SQLite
   # sqlite:///absolute/path/to/db/file.db 3times of '/'
   # Mssql
-  # mssql+pymssql://username:password@hostname:port/database_name 
-  uri: 'postgresql+psycopg2://postgres:postgres@localhost:5432/postgres'
+  # mssql+pymssql://username:password@hostname:port/database_name
+  uri: 'postgresql+psycopg2://postgres:postgres@localhost:5432/x_clone_dev'
   # uri: 'mongodb+srv://dbbruce:smjk123@atlascluster.siz4vrp.mongodb.net/?retryWrites=true&w=majority'
   # uri: 'mssql+pymssql://{dbuser}:{dbpassword}@{dbhost}/{dbname}'
   alembic_ini: 'configs/alembic.ini' #empty or none will disable auto migrate
